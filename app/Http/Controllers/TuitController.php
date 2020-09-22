@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Tuit;
 use App\Like;
+use App\Block;
 
 class TuitController extends Controller{
     /**
@@ -113,7 +114,6 @@ class TuitController extends Controller{
 	        ], 401);
     	}
     }
-
     /**
      * Show all user`s likes
      */
@@ -124,5 +124,51 @@ class TuitController extends Controller{
     			   ->where('likes.user_id','=',auth()->user()->id)
     			   ->orderBy('likes.created_at','desc')
     			   ->get();
+    }
+    // Blocks
+    /**
+     * Create a block
+     */
+    public function createBlock(Request $request){
+        $request->validate([
+            'user' => 'required|exists:App\User,id'
+        ]);
+
+        Block::create([
+            'user_id' => auth()->user()->id,
+            'block_id' => $request->user
+        ]);
+
+        return response()->json([
+            'message' => 'Successfully blocked!'
+        ], 201);
+    }
+    /**
+     * Delete a block
+     */
+    public function deleteBlock($id){
+    	$block = Block::where('user_id','=',auth()->user()->id)
+    				->where('block_id','=',$id)
+    				->get();
+        if(isset($block)){
+        	$block[0]->delete();
+	        return response()->json([
+	            'message' => 'Successfully deleted!'
+	        ], 201);
+    	}else{
+    		return response()->json([
+	            'message' => 'Unauthorized to deleted!'
+	        ], 401);
+    	}
+    }
+    /**
+     * Show all user`s blocks
+     */
+    public function getBlocks(Request $request){
+    	return Block::join('users','users.id','=','blocks.block_id')
+    			    ->select('blocks.id', 'users.name as username', 'users.email', 'users.id as userId')
+    			    ->where('blocks.user_id','=',auth()->user()->id)
+    			    ->orderBy('blocks.created_at','desc')
+    			    ->get();
     }
 }

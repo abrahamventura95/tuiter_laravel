@@ -69,3 +69,16 @@ Route::group([
         Route::delete('{id}', 'TuitController@deleteLike');
     });
 });
+
+//Like
+Route::group([
+    'prefix' => 'block'
+], function () {
+    Route::group([
+      'middleware' => 'auth:api'
+    ], function() {
+        Route::post('', 'TuitController@createBlock');
+        Route::get('', 'TuitController@getBlocks');
+        Route::delete('{id}', 'TuitController@deleteBlock');
+    });
+});
