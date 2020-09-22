@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Tuit;
+use App\Like;
 
 class TuitController extends Controller{
     /**
@@ -51,7 +52,13 @@ class TuitController extends Controller{
     			         ->orderBy('type','asc')
     			         ->orderBy('created_at','desc')
     			         ->get();	      
-    	$resp = array('tuit' => $tuit[0], 'responses' => $responses);				   
+    	$likes = Tuit::join('likes','likes.tuit_id','=','tuits.id')
+    			   	 ->join('users','users.id','=','tuits.user_id')
+    			     ->select('tuits.*', 'users.name as username', 'users.email')
+    			     ->where('likes.tuit_id','=',$id)
+    			     ->orderBy('likes.created_at','desc')
+    			     ->get();		         
+    	$resp = array('tuit' => $tuit[0], 'responses' => $responses, 'likes' => $likes);				   
     	return $resp;
     }
     /**
@@ -69,5 +76,53 @@ class TuitController extends Controller{
 	            'message' => 'Unauthorized to deleted!'
 	        ], 401);
     	}
+    }
+    //Likes
+    /**
+     * Create a like
+     */
+    public function createLike(Request $request){
+        $request->validate([
+            'tuit' => 'required|exists:App\Tuit,id'
+        ]);
+
+        Like::create([
+            'user_id' => auth()->user()->id,
+            'tuit_id' => $request->tuit
+        ]);
+
+        return response()->json([
+            'message' => 'Successfully created like!'
+        ], 201);
+    }
+    /**
+     * Delete a like
+     */
+    public function deleteLike($id){
+    	$like = Like::where('user_id','=',auth()->user()->id)
+    				->where('tuit_id','=',$id)
+    				->get();
+        if(isset($like)){
+        	$like[0]->delete();
+	        return response()->json([
+	            'message' => 'Successfully deleted!'
+	        ], 201);
+    	}else{
+    		return response()->json([
+	            'message' => 'Unauthorized to deleted!'
+	        ], 401);
+    	}
+    }
+
+    /**
+     * Show all user`s likes
+     */
+    public function getLikes(Request $request){
+    	return Tuit::join('likes','likes.tuit_id','=','tuits.id')
+    			   ->join('users','users.id','=','tuits.user_id')
+    			   ->select('tuits.*', 'users.name as username', 'users.email')
+    			   ->where('likes.user_id','=',auth()->user()->id)
+    			   ->orderBy('likes.created_at','desc')
+    			   ->get();
     }
 }

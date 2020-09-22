@@ -43,7 +43,7 @@ Route::group([
     });
 });
 
-//User
+//Tuit
 Route::group([
     'prefix' => 'tuit'
 ], function () {
@@ -54,5 +54,18 @@ Route::group([
         Route::get('', 'TuitController@getMine');
         Route::get('{id}', 'TuitController@show');
         Route::delete('{id}', 'TuitController@delete');
+    });
+});
+
+//Like
+Route::group([
+    'prefix' => 'like'
+], function () {
+    Route::group([
+      'middleware' => 'auth:api'
+    ], function() {
+        Route::post('', 'TuitController@createLike');
+        Route::get('', 'TuitController@getLikes');
+        Route::delete('{id}', 'TuitController@deleteLike');
     });
 });
