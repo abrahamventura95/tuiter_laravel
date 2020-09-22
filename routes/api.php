@@ -50,6 +50,7 @@ Route::group([
     Route::group([
       'middleware' => 'auth:api'
     ], function() {
+    	Route::get('timeline','TuitController@get');
         Route::post('', 'TuitController@create');
         Route::get('', 'TuitController@getMine');
         Route::get('{id}', 'TuitController@show');
@@ -70,7 +71,7 @@ Route::group([
     });
 });
 
-//Like
+//Block
 Route::group([
     'prefix' => 'block'
 ], function () {
@@ -80,5 +81,19 @@ Route::group([
         Route::post('', 'TuitController@createBlock');
         Route::get('', 'TuitController@getBlocks');
         Route::delete('{id}', 'TuitController@deleteBlock');
+    });
+});
+
+//Follows
+Route::group([
+    'prefix' => 'follow'
+], function () {
+    Route::group([
+      'middleware' => 'auth:api'
+    ], function() {
+        Route::post('', 'TuitController@createFollow');
+        Route::put('{id}','TuitController@acceptFollow');
+        Route::get('{id}', 'TuitController@getFollows');
+        Route::delete('{id}', 'TuitController@deleteFollow');
     });
 });

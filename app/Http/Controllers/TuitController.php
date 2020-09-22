@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Tuit;
 use App\Like;
 use App\Block;
+use App\Follow;
+use App\User;
 
 class TuitController extends Controller{
     /**
@@ -35,8 +37,8 @@ class TuitController extends Controller{
      */
     public function getMine(Request $request){
     	return Tuit::where('user_id','=',auth()->user()->id)
-    			      ->orderBy('created_at','desc')
-    			      ->get();
+			       ->orderBy('created_at','desc')
+		    	   ->get();
     }
     /**
      * Show a tuit
@@ -170,5 +172,81 @@ class TuitController extends Controller{
     			    ->where('blocks.user_id','=',auth()->user()->id)
     			    ->orderBy('blocks.created_at','desc')
     			    ->get();
+    }
+    // Follows
+    /**
+     * Create a follow
+     */
+    public function createFollow(Request $request){
+        $request->validate([
+            'user' => 'required|exists:App\User,id'
+        ]);
+        $user = User::find($request->user);
+      	Follow::create([
+	            'user_id' => auth()->user()->id,
+	            'follow_id' => $request->user,
+	            'status' => !($user->privacity)
+	    ]);
+
+        return response()->json([
+            'message' => 'Successfully followed!'
+        ], 201);
+    }
+    /**
+     * Delete a follow
+     */
+    public function deleteFollow($id){
+    	$follow = Follow::where('user_id','=',auth()->user()->id)
+    					->where('follow_id','=',$id)
+    					->get();
+        if(isset($follow)){
+        	$follow[0]->delete();
+	        return response()->json([
+	            'message' => 'Successfully deleted!'
+	        ], 201);
+    	}else{
+    		return response()->json([
+	            'message' => 'Unauthorized to deleted!'
+	        ], 401);
+    	}
+    }
+    /**
+     * Show all user`s follows & followers
+     */
+    public function getFollows($id){
+    	if(!$id) $id = auth()->user()->id;
+    	$follows = Follow::join('users','users.id','=','followers.follow_id')
+    					 ->select('users.*','followers.status', 'followers.id as FollowId')
+    					 ->where('followers.user_id','=',$id)
+    					 ->orderBy('followers.status','desc')
+    					 ->orderBy('followers.updated_at', 'desc')
+    					 ->get();
+    	$followers = Follow::join('users','users.id','=','followers.user_id')
+    					   ->select('users.*','followers.status', 'followers.id as FollowId')
+    					   ->where('followers.follow_id','=',$id)
+    					   ->orderBy('followers.status','desc')
+    					   ->orderBy('followers.updated_at', 'desc')
+    					   ->get();				 
+    	$resp = array('follows' => $follows, '$followers' => $followers);
+    	return $resp;
+    }
+    /**
+     * Edit a follow
+     */
+    public function acceptFollow($id){
+    	$follow = Follow::find($id);
+    	$follow->status = 1;
+    	$follow->save();
+        return $follow;
+    }
+    //Timeline
+    public function get(Request $request){
+    	return Tuit::join('followers','followers.follow_id','=','tuits.user_id')
+    			   ->join('users','users.id','=','tuits.user_id')
+    			   ->select('tuits.*','users.name as username','users.email')
+    			   ->where('followers.user_id','=',auth()->user()->id)
+    			   ->where('followers.status','=','1')
+			       ->orderBy('tuits.created_at','desc')
+		    	   ->get();
     }
 }
