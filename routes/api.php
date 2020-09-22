@@ -42,3 +42,17 @@ Route::group([
         Route::delete('{id}', 'UserController@delete');
     });
 });
+
+//User
+Route::group([
+    'prefix' => 'tuit'
+], function () {
+    Route::group([
+      'middleware' => 'auth:api'
+    ], function() {
+        Route::post('', 'TuitController@create');
+        Route::get('', 'TuitController@getMine');
+        Route::get('{id}', 'TuitController@show');
+        Route::delete('{id}', 'TuitController@delete');
+    });
+});
