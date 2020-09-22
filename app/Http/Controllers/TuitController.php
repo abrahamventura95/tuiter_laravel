@@ -20,7 +20,34 @@ class TuitController extends Controller{
             'type' => 'in:rt,quote,replay',
             'ref' => 'exists:App\Tuit,id'
         ]);
-
+        if(isset($request->ref)){
+        	$tuit = Tuit::find($request->ref);
+        	$user = User::find($tuit->user_id);
+        	$block = Block::where('block_id','=',auth()->user()->id)
+        				  ->where('user_id','=',$user->id)
+        				  ->get();
+        	if($request->type === 'rt' && $user->privacity){
+        		return response()->json([
+				            'message' => 'Cannot create rt this tuit!'
+				        ], 401);
+        	}			  
+        	if(!sizeof($block)){
+        		if($user->privacity){
+        			$friendTo = Follow::where('follow_id','=',auth()->user()->id)
+        							  ->where('status','=','1')
+        							  ->get();				  
+      				if(!sizeof($friendTo)){			
+				        return response()->json([
+				            'message' => 'Cannot create the tuit!'
+				        ], 401);
+      				}
+        		}
+        	}else{
+		        return response()->json([
+		            'message' => 'Cannot create the tuit!'
+		        ], 401);
+        	}
+        }
         Tuit::create([
             'user_id' => auth()->user()->id,
             'msg' => $request->msg,
@@ -49,6 +76,26 @@ class TuitController extends Controller{
     				  ->where('tuits.id','=',$id)
     			      ->orderBy('created_at','desc')
     			      ->get();
+    	$user = User::find($tuit[0]->user_id);
+    	$block = Block::where('block_id','=',auth()->user()->id)
+    				  ->where('user_id','=',$user->id)
+    				  ->get();		  
+    	if(!sizeof($block)){
+    		if($user->privacity){
+    			$friendTo = Follow::where('follow_id','=',auth()->user()->id)
+    							  ->where('status','=','1')
+    							  ->get();				  
+  				if(!sizeof($friendTo)){			
+			        return response()->json([
+			            'message' => 'Cannot show the tuit!'
+			        ], 401);
+  				}
+    		}
+    	}else{
+	        return response()->json([
+	            'message' => 'Cannot show the tuit!'
+	        ], 401);
+    	}		      
     	$responses = Tuit::join('users','users.id','=','tuits.user_id')
     				  	 ->select('tuits.*', 'users.name as username', 'users.email')
     				     ->where('tuits.ref','=',$id)
@@ -88,7 +135,27 @@ class TuitController extends Controller{
         $request->validate([
             'tuit' => 'required|exists:App\Tuit,id'
         ]);
-
+        $tuit = Tuit::find($request->tuit);
+    	$user = User::find($tuit->user_id);
+    	$block = Block::where('block_id','=',auth()->user()->id)
+    				  ->where('user_id','=',$user->id)
+    				  ->get(); 
+    	if(!sizeof($block)){
+    		if($user->privacity){
+    			$friendTo = Follow::where('follow_id','=',auth()->user()->id)
+    							  ->where('status','=','1')
+    							  ->get();				  
+  				if(!sizeof($friendTo)){			
+			        return response()->json([
+			            'message' => 'Cannot like this tuit!'
+			        ], 401);
+  				}
+    		}
+    	}else{
+	        return response()->json([
+	            'message' => 'Cannot like this tuit!'
+	        ], 401);
+    	}
         Like::create([
             'user_id' => auth()->user()->id,
             'tuit_id' => $request->tuit
